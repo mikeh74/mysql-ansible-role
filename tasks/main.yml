@@ -22,13 +22,13 @@
 
 - name: MySQL | Copy Mysql configuration file.
   template:
-    src: ../templates/my.cnf.j2
+    src: templates/my.cnf.j2
     dest: /etc/mysql/my.cnf
     mode: 0644
 
 - name: MySQL | Copy user config file.
   template:
-    src: ../templates/user.my.cnf.j2
+    src: templates/user.my.cnf.j2
     dest: ~/.my.cnf
     # owner: "{{ ansible_user }}"
     mode: 0644
