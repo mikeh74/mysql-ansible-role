@@ -1,0 +1,31 @@
+---
+- name: Get software for apt repository management.
+  apt: "name={{ item }} state=present"
+  with_items:
+    - python-apt
+    - python-pycurl
+
+- name: "Install MySQL"
+  apt: "name={{ item }} state=present"
+  with_items:
+    - python-mysqldb
+    - mysql-server
+
+- name: "Start MySQL"
+  service: "name=mysql state=started enabled=yes"
+
+- name: ensure anonymous users are not in the database
+  mysql_user: name='' host={{ item }} state=absent
+  with_items:
+    - localhost
+
+- name: Remove the MySQL test database.
+  mysql_db: db=test state=absent
+
+- name: Create a MySQL user.
+  mysql_user:
+    name: "{{ mysql_user }}"
+    password: "{{ mysql_password }}"
+    priv: "*.*:ALL"
+    host: localhost
+    state: present

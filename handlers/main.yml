@@ -1,0 +1,3 @@
+--- # Ansible Role [MySQL]: handlers.main
+- name: Restart MySQL service
+  service: name=mysql state=restarted
