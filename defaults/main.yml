@@ -1,2 +1,5 @@
 ---
-# defaults file for mysql
+mysql_root_password: root
+
+mysql_host: localhost
+mysql_port: 3306

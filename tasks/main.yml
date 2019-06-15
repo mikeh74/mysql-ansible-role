@@ -1,31 +1,87 @@
 ---
-- name: Get software for apt repository management.
-  apt: "name={{ item }} state=present"
-  with_items:
-    - python-apt
-    - python-pycurl
+- name: MySQL | Get software for apt repository management.
+  apt: 
+    name: ['python-apt', 'python-pycurl']
+    state: present
 
-- name: "Install MySQL"
-  apt: "name={{ item }} state=present"
-  with_items:
-    - python-mysqldb
-    - mysql-server
+- name: MySQL | Install MySQL and required dependencies.
+  apt:
+    name: ['python-mysqldb', 'mysql-server']
+    state: present
 
-- name: "Start MySQL"
-  service: "name=mysql state=started enabled=yes"
+- name: MySQL | Start the service
+  service: 
+    name: mysql
+    state: started 
+    enabled: yes
 
-- name: ensure anonymous users are not in the database
+- name: MySQL | ensure anonymous users are not in the database
   mysql_user: name='' host={{ item }} state=absent
   with_items:
     - localhost
 
-- name: Remove the MySQL test database.
-  mysql_db: db=test state=absent
+- name: MySQL | Copy Mysql configuration file.
+  template:
+    src: ../templates/my.cnf.j2
+    dest: /etc/mysql/my.cnf
+    mode: 0644
 
-- name: Create a MySQL user.
+- name: MySQL | Copy user config file.
+  template:
+    src: ../templates/user.my.cnf.j2
+    dest: ~/.my.cnf
+    # owner: "{{ ansible_user }}"
+    mode: 0644
+
+#############
+# MySql root password
+# 
+# Found the following as part of this discussion here:
+# https://stackoverflow.com/questions/26597926/install-mysql-with-ansible-on-ubuntu
+#
+- name: MySQL | Set root user password
+  mysql_user: 
+    name: root
+    host: localhost
+    password: '{{ mysql_root_password }}'
+    check_implicit_admin: 'yes'
+    state: present
+  
+- name: MySQL | Remove the MySQL test database.
+  mysql_db: 
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    db: test
+    state: absent
+
+- name: MySQL | Create a MySQL user.
   mysql_user:
     name: "{{ mysql_user }}"
     password: "{{ mysql_password }}"
     priv: "*.*:ALL"
     host: localhost
     state: present
+
+- name: MySQL | create mysql root user for remote connection
+  mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: root
+    password: '{{ mysql_root_password }}'
+    priv: '*.*:ALL'
+    host: '%'
+    state: present
+
+- name: MySQL | Create database if it doesn't exist"
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: "{{ domain }}"
+    encoding: utf8
+    collation: utf8_general_ci
+    state: present
+
+- name: MySQL | restart mysql
+  service: 
+    name: mysql
+    state: restarted
