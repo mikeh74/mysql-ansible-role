@@ -30,5 +30,20 @@ provisioner:
       pipelining: true
   playbooks:
     converge: playbook.yml
+    prepare: prepare.yml
+    cleanup: cleanup.yml
+    side_effect: side_effect.yml
+  test_sequence:
+    - dependency
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy
 verifier:
   name: ansible

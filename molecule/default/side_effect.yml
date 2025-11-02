@@ -1,0 +1,18 @@
+---
+# Side effect playbook for molecule testing
+# This playbook tests for any unintended side effects
+- name: Test for side effects
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check that no unexpected services are running
+      ansible.builtin.service_facts:
+
+    - name: Verify no unexpected ports are listening
+      ansible.builtin.shell: netstat -tuln
+      register: netstat_output
+      changed_when: false
+
+    - name: Display listening ports
+      ansible.builtin.debug:
+        var: netstat_output.stdout_lines

@@ -1,0 +1,19 @@
+---
+# Prepare playbook for molecule testing
+# This playbook runs before the converge playbook
+- name: Prepare test environment
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      become: true
+
+    - name: Install required packages for testing
+      ansible.builtin.apt:
+        name:
+          - curl
+          - net-tools
+        state: present
+      become: true

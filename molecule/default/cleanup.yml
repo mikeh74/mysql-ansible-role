@@ -1,0 +1,10 @@
+---
+# Cleanup playbook for molecule testing
+# This playbook runs after tests to clean up any test artifacts
+- name: Cleanup test environment
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: No cleanup tasks needed
+      ansible.builtin.debug:
+        msg: "Cleanup completed successfully"
