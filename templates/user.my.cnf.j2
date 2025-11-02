@@ -1,3 +1,14 @@
+# {{ ansible_managed }}
+# MySQL client configuration
+
 [client]
-user=root
-password={{ mysql_root_password }}
+user = root
+password = {{ mysql_root_password }}
+socket = {{ mysql_socket | default('/var/run/mysqld/mysqld.sock') }}
+
+[mysql]
+auto-rehash
+
+[mysqldump]
+quick
+max_allowed_packet = {{ mysql_max_allowed_packet }}

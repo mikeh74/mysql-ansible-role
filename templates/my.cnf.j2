@@ -1,3 +1,26 @@
+# {{ ansible_managed }}
+# Custom MySQL configuration
+
 [mysqld]
-bind-address=0.0.0.0
-max_allowed_packet=32M
+# Network configuration
+port = {{ mysql_port }}
+bind-address = {{ mysql_bind_address }}
+
+# General configuration
+max_allowed_packet = {{ mysql_max_allowed_packet }}
+max_connections = {{ mysql_max_connections }}
+
+# Character set configuration
+character_set_server = {{ mysql_character_set_server }}
+collation_server = {{ mysql_collation_server }}
+
+# Logging configuration
+log_error = {{ mysql_log_error }}
+{% if mysql_slow_query_log_enabled %}
+slow_query_log = 1
+slow_query_log_file = {{ mysql_slow_query_log_file }}
+long_query_time = {{ mysql_long_query_time }}
+{% endif %}
+
+# Security
+skip_name_resolve = 1

@@ -1,5 +1,13 @@
---- # Ansible Role [MySQL]: handlers.main
-- name: restart mysql
-  service:
-    name: mysql
+---
+- name: Restart mysql
+  ansible.builtin.systemd:
+    name: "{{ mysql_service }}"
     state: restarted
+    daemon_reload: true
+  listen: restart mysql
+
+- name: Reload mysql
+  ansible.builtin.systemd:
+    name: "{{ mysql_service }}"
+    state: reloaded
+  listen: reload mysql

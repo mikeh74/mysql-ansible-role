@@ -1,0 +1,10 @@
+---
+# Basic MySQL installation
+- name: Install MySQL on database servers
+  hosts: database_servers
+  become: true
+  vars:
+    mysql_root_password: "secure_password_here"
+
+  roles:
+    - mikeh74.mysql

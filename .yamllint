@@ -1,11 +1,26 @@
+---
 extends: default
 
+ignore: |
+  .venv/
+  .tox/
+  .cache/
+
 rules:
+  line-length:
+    max: 120
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
   braces:
     max-spaces-inside: 1
     level: error
   brackets:
     max-spaces-inside: 1
     level: error
-  line-length: disable
-  truthy: disable
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

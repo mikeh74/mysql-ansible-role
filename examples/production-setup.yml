@@ -1,0 +1,47 @@
+---
+# Production MySQL setup with multiple databases and users
+- name: Configure production MySQL setup
+  hosts: database_servers
+  become: true
+  vars:
+    mysql_root_password: "{{ vault_mysql_root_password }}"
+    mysql_bind_address: "0.0.0.0"
+    mysql_max_connections: 1000
+    mysql_innodb_buffer_pool_size: "2G"
+    mysql_slow_query_log_enabled: true
+
+    mysql_databases:
+      - name: webapp_production
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+      - name: webapp_staging
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+      - name: analytics
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+
+    mysql_users:
+      - name: webapp_user
+        password: "{{ vault_webapp_password }}"
+        priv: "webapp_production.*:ALL"
+        host: "10.0.1.%"
+      - name: webapp_staging_user
+        password: "{{ vault_webapp_staging_password }}"
+        priv: "webapp_staging.*:ALL"
+        host: "10.0.2.%"
+      - name: analytics_user
+        password: "{{ vault_analytics_password }}"
+        priv: "analytics.*:ALL"
+        host: "10.0.3.%"
+      - name: readonly_user
+        password: "{{ vault_readonly_password }}"
+        priv: "webapp_production.*:SELECT,SHOW VIEW"
+        host: "10.0.4.%"
+      - name: backup_user
+        password: "{{ vault_backup_password }}"
+        priv: "*.*:SELECT,LOCK TABLES,SHOW VIEW,EVENT,TRIGGER"
+        host: "backup.example.com"
+
+  roles:
+    - mikeh74.mysql

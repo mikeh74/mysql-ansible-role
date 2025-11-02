@@ -1,0 +1,16 @@
+---
+warn_list:
+  - yaml[line-length]
+  - name[casing]
+  - name[template]
+
+skip_list:
+  - yaml[comments-indentation]
+
+exclude_paths:
+  - .cache/
+  - .github/
+  - molecule/*/files/
+  - vars/
+
+use_default_rules: true

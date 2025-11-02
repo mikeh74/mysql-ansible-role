@@ -1,87 +1,126 @@
 ---
-- name: Get software for apt repository management.
-  apt: 
-    name: ['python-apt', 'python-pycurl']
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  failed_when: false
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Install MySQL packages
+  ansible.builtin.package:
+    name: "{{ mysql_packages }}"
     state: present
 
-- name: Install MySQL and required dependencies.
-  apt:
-    name: ['python-mysqldb', 'mysql-server']
+- name: Install Python MySQL dependencies
+  ansible.builtin.package:
+    name: "{{ mysql_python_packages }}"
     state: present
 
-- name: Start the service
-  service: 
-    name: mysql
-    state: started 
-    enabled: yes
+- name: Start and enable MySQL service
+  ansible.builtin.systemd:
+    name: "{{ mysql_service }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Get MySQL version
+  ansible.builtin.command: mysql --version
+  register: mysql_cli_version
+  changed_when: false
+  check_mode: false
+
+- name: Check if MySQL root password is already set
+  ansible.builtin.shell: >
+    mysql -u root -p'{{ mysql_root_password }}' -e "SELECT 1" 2>/dev/null
+  register: mysql_root_password_set
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Check if MySQL allows passwordless root login
+  ansible.builtin.shell: >
+    mysql -u root -e "SELECT 1" 2>/dev/null
+  register: mysql_root_passwordless
+  changed_when: false
+  failed_when: false
+  no_log: true
+  when: mysql_root_password_set.rc != 0
+
+- name: Set MySQL root password for the first time (MySQL 5.7+)
+  ansible.builtin.shell: >
+    mysql -u root -e "ALTER USER 'root'@'localhost'
+    IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
+  when:
+    - mysql_root_password_set.rc != 0
+    - mysql_root_passwordless.rc == 0
+    - mysql_root_password != ""
+  no_log: true
+
+- name: Copy MySQL configuration file
+  ansible.builtin.template:
+    src: my.cnf.j2
+    dest: /etc/mysql/mysql.conf.d/99-custom.cnf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+
+- name: Create MySQL root user .my.cnf file
+  ansible.builtin.template:
+    src: user.my.cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
 
 - name: Ensure anonymous users are not in the database
-  mysql_user: name='' host={{ item }} state=absent
-  with_items:
-    - localhost
-
-- name: Copy Mysql configuration file.
-  template:
-    src: templates/my.cnf.j2
-    dest: /etc/mysql/my.cnf
-    mode: 0644
-
-- name: Copy user config file.
-  template:
-    src: templates/user.my.cnf.j2
-    dest: ~/.my.cnf
-    # owner: "{{ ansible_user }}"
-    mode: 0644
-
-#############
-# MySql root password
-# 
-# Found the following as part of this discussion here:
-# https://stackoverflow.com/questions/26597926/install-mysql-with-ansible-on-ubuntu
-#
-- name: Set root user password
-  mysql_user: 
-    name: root
-    host: localhost
-    password: '{{ mysql_root_password }}'
-    check_implicit_admin: 'yes'
-    state: present
-  
-- name: Remove the MySQL test database.
-  mysql_db: 
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    db: test
+  community.mysql.mysql_user:
+    name: ""
+    host_all: true
     state: absent
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  when: mysql_remove_anonymous_users | bool
 
-- name: Create a MySQL user.
-  mysql_user:
-    name: "{{ mysql_user }}"
-    password: "{{ mysql_password }}"
-    priv: "*.*:ALL"
-    host: localhost
+- name: Remove the MySQL test database
+  community.mysql.mysql_db:
+    name: test
+    state: absent
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  when: mysql_remove_test_database | bool
+
+- name: Disallow root login remotely
+  community.mysql.mysql_query:
+    query: DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  when: mysql_disallow_root_login_remotely | bool
+
+- name: Create MySQL databases
+  community.mysql.mysql_db:
+    name: "{{ item.name }}"
+    encoding: "{{ item.encoding | default('utf8mb4') }}"
+    collation: "{{ item.collation | default('utf8mb4_unicode_ci') }}"
     state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  loop: "{{ mysql_databases }}"
+  when: mysql_databases is defined
 
-- name: Create mysql root user for remote connection
-  mysql_user:
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    name: root
-    password: '{{ mysql_root_password }}'
-    priv: '*.*:ALL'
-    host: '%'
-    state: present
+- name: Create MySQL users
+  community.mysql.mysql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.priv | default('*.*:USAGE') }}"
+    host: "{{ item.host | default('localhost') }}"
+    state: "{{ item.state | default('present') }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  loop: "{{ mysql_users }}"
+  when: mysql_users is defined
+  no_log: true
 
-- name: Create database if it doesn't exist
-  mysql_db:
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    name: "{{ domain }}"
-    encoding: utf8
-    collation: utf8_general_ci
-    state: present
-
-- name: Restart mysql
-  service: 
-    name: mysql
-    state: restarted
+- name: Flush privileges
+  community.mysql.mysql_query:
+    query: FLUSH PRIVILEGES
+    login_unix_socket: /var/run/mysqld/mysqld.sock

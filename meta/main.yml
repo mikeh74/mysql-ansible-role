@@ -1,13 +1,24 @@
+---
 galaxy_info:
+  role_name: mysql
+  namespace: mikeh74
   author: Mike Horrocks
-  description: Mysql installation
+  description: Modern MySQL installation and configuration for Ubuntu systems
   license: MIT
-  min_ansible_version: 2.4
+  min_ansible_version: 2.15.0
   platforms:
     - name: Ubuntu
       versions:
-        - 18.04
-        - 16.04
+        - focal
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
   galaxy_tags:
     - mysql
     - database
+    - mariadb
+    - sql
+dependencies: []

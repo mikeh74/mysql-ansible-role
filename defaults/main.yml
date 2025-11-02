@@ -1,5 +1,48 @@
 ---
-mysql_root_password: root
+# MySQL/MariaDB configuration
+mysql_package: mysql-server
+mysql_service: mysql
 
-mysql_host: localhost
+# Root user configuration
+mysql_root_password: "{{ vault_mysql_root_password | default('changeme123!') }}"
+mysql_root_password_update: false
+
+# MySQL configuration
 mysql_port: 3306
+mysql_bind_address: "127.0.0.1"
+mysql_max_allowed_packet: "32M"
+mysql_max_connections: 151
+mysql_thread_cache_size: 8
+mysql_query_cache_size: "16M"
+mysql_innodb_buffer_pool_size: "128M"
+
+# Security settings
+mysql_remove_anonymous_users: true
+mysql_remove_test_database: true
+mysql_disallow_root_login_remotely: true
+
+# Users and databases
+mysql_users: []
+# Example:
+# mysql_users:
+#   - name: example_user
+#     password: secure_password
+#     priv: "example_db.*:ALL"
+#     host: localhost
+
+mysql_databases: []
+# Example:
+# mysql_databases:
+#   - name: example_db
+#     encoding: utf8mb4
+#     collation: utf8mb4_unicode_ci
+
+# Log settings
+mysql_log_error: /var/log/mysql/error.log
+mysql_slow_query_log_enabled: false
+mysql_slow_query_log_file: /var/log/mysql/mysql-slow.log
+mysql_long_query_time: 2
+
+# Character set
+mysql_character_set_server: utf8mb4
+mysql_collation_server: utf8mb4_unicode_ci

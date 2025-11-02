@@ -1,5 +1,23 @@
 ---
 - name: Converge
   hosts: all
+  become: true
+  vars:
+    mysql_root_password: "test123!"
+    mysql_databases:
+      - name: test_db
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+    mysql_users:
+      - name: test_user
+        password: "testpass123!"
+        priv: "test_db.*:ALL"
+        host: localhost
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
   roles:
-    - role: mysql
+    - role: ../../..

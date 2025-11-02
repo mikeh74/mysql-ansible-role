@@ -1,0 +1,7 @@
+.ansible/
+*.retry
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+.venv/
